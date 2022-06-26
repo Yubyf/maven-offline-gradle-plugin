@@ -126,7 +126,7 @@ sub-projects.
 
 ### Task
 
-The plugin provides a `mavenOffline` task to fetch dependencies. After Gradle sync is complete, the task will be
+The plugin provides a `fetchMavens` task to fetch dependencies. After Gradle sync is complete, the task will be
 available in the Gradle tasks list.
 
 You can run the task through the Gradle console:
