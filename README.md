@@ -70,9 +70,9 @@ plugins {
 ```groovy
 // build.gradle
 buildscript {
-    ...
+    //...
     dependencies {
-        ...
+        //...
         classpath 'io.github.yubyf.mavenoffline:maven-offline-gradle-plugin:${latest_version}'
     }
 }
@@ -162,6 +162,32 @@ Detailed logs are output to .../sample/build/outputs/logs/maven-offline-sample-r
 ```
 
 You can view the detailed logs by clicking the file link at the end of the task output in the console.
+
+The fetched file structure is as follows:
+
+```console
+maven-offline
+└── junit
+    └── junit
+        ├── 4.13.2
+        │   ├── junit-4.13.2-javadoc.jar
+        │   ├── junit-4.13.2-javadoc.jar.asc
+        │   ├── junit-4.13.2-javadoc.jar.md5
+        │   ├── junit-4.13.2-javadoc.jar.sha1
+        │   ├── junit-4.13.2-sources.jar
+        │   ├── junit-4.13.2-sources.jar.asc
+        │   ├── junit-4.13.2-sources.jar.md5
+        │   ├── junit-4.13.2-sources.jar.sha1
+        │   ├── junit-4.13.2.jar
+        │   ├── junit-4.13.2.jar.asc
+        │   ├── junit-4.13.2.jar.md5
+        │   ├── junit-4.13.2.jar.sha1
+        │   ├── junit-4.13.2.pom
+        │   ├── junit-4.13.2.pom.asc
+        │   ├── junit-4.13.2.pom.md5
+        │   └── junit-4.13.2.pom.sha1
+        └── maven-metadata.xml
+```
 
 ## License
 
