@@ -57,6 +57,30 @@ java {
 publishing {
     afterEvaluate {
         publications {
+            getByName<MavenPublication>("pluginMaven") {
+                pom {
+                    name.set(pomName)
+                    description.set(pomDescription)
+                    url.set(pomUrl)
+                    licenses {
+                        license {
+                            name.set(pomLicenseName)
+                            url.set(pomLicenseUrl)
+                        }
+                    }
+                    developers {
+                        developer {
+                            name.set(developerName)
+                            email.set(developerEmail)
+                        }
+                    }
+                    scm {
+                        url.set(pom.url.get())
+                        connection.set("scm:git:${url.get()}.git")
+                        developerConnection.set("scm:git:${url.get()}.git")
+                    }
+                }
+            }
             getByName<MavenPublication>("mavenOfflinePluginMarkerMaven") {
                 pom {
                     url.set(pomUrl)
@@ -139,6 +163,7 @@ signing {
     useGpgCmd()
     afterEvaluate {
         sign(publishing.publications["release"])
+        sign(publishing.publications["pluginMaven"])
         sign(publishing.publications["mavenOfflinePluginMarkerMaven"])
     }
 }
