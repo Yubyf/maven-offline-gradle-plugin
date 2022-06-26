@@ -48,7 +48,7 @@ abstract class MavenOfflineTask : DefaultTask() {
 
         logger.lifecycle("Extracting artifacts for project :$projectName...")
         val dependencies = extractDependencies()
-        if (dependencies == null || dependencies.size.also { logger.lifecycle("found $it dependencies in project :$projectName") } == 0) {
+        if (dependencies == null || dependencies.size.also { logger.lifecycle("Found $it dependencies in project :$projectName") } == 0) {
             printCompletedLog()
             return
         }
