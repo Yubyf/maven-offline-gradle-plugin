@@ -9,6 +9,11 @@ Gradle plugin for fetching specific maven repositories to local.
 
 ![MavenOffline](doc/maven-offline-sample.png)
 
+Supported dependency types:
+> [test|androidTest|debug|testDebug|androidTestDebug|testRelease|androidTestRelease]
+> \+
+> [implementation|api|compileOnly|runtimeOnly|annotationProcessor]
+
 ## Installation
 
 **Maven Offline Gradle Plugin** is available on
