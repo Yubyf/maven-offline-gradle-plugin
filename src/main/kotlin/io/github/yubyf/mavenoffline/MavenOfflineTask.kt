@@ -284,4 +284,5 @@ abstract class MavenOfflineTask : DefaultTask() {
     )
 }
 
-private val ioScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+@OptIn(ExperimentalCoroutinesApi::class)
+private val ioScope = CoroutineScope(Dispatchers.IO.limitedParallelism(10) + SupervisorJob())
