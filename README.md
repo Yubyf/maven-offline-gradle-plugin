@@ -189,6 +189,12 @@ maven-offline
         └── maven-metadata.xml
 ```
 
+## TODO
+
+- [ ] Add support for fetching `annotationProcessor` dependencies.
+- [ ] Add support for URL wildcard pattern for Maven URL declarations.
+- [ ] Added support for file verification before fetching.
+
 ## License
 
     Copyright (c) 2022 Alex Liu
