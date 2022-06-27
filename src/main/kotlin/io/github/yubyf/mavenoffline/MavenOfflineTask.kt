@@ -105,7 +105,7 @@ abstract class MavenOfflineTask : DefaultTask() {
                 val dir = File(targetDir.get(), path)
                 effectiveRepos.runCatching {
                     find { repo ->
-                        val url = repo.url.toString().takeIf { it.endsWith("/") } ?: "${repo.url}/"
+                        val url = repo.url
                         val credentials = repo.credentials
                         val metaUrl = "$url$metaPath"
 
@@ -160,7 +160,7 @@ abstract class MavenOfflineTask : DefaultTask() {
                             }
                         }
                     }?.let { repo ->
-                        val url = repo.url.toString().takeIf { it.endsWith("/") } ?: "${repo.url}/"
+                        val url = repo.url
                         val credentials = repo.credentials
 
                         // Download lib extra and checksum files
