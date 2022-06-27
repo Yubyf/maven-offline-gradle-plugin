@@ -184,7 +184,7 @@ abstract class MavenOfflineTask : DefaultTask() {
                         }
                     } ?: notFoundDependencies.add(name)
                 }.onFailure { e ->
-                    logger.indentError("Failed to download $id \n\t\t${e.message}")
+                    logger.error("Failed to download $id", e)
                     failedDependencies.add(name)
                 }
             })
