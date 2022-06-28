@@ -7,4 +7,5 @@ pluginManagement {
     }
 }
 
-rootProject.name = "maven-offline"
+// `PluginMarkerMaven` task uses root project's name as the marked dependency's artifact id.
+rootProject.name = "maven-offline-gradle-plugin"

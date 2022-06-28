@@ -38,6 +38,10 @@ pluginBundle {
     website = pomUrl
     vcsUrl = pomUrl
     tags = listOf("maven", "offline")
+    mavenCoordinates {
+        groupId = mavenGroupId
+        artifactId = mavenArtifactId
+    }
 }
 
 gradlePlugin {
@@ -60,6 +64,7 @@ publishing {
             getByName<MavenPublication>("pluginMaven") {
                 pom {
                     name.set(pomName)
+                    artifactId = mavenArtifactId
                     description.set(pomDescription)
                     url.set(pomUrl)
                     licenses {
