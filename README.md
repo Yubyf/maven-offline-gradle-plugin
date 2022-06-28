@@ -1,5 +1,6 @@
 # Maven Offline
 
+[![Gradle Plugin Portal](https://img.shields.io/gradle-plugin-portal/v/io.github.yubyf.maven-offline?label=Gradle%20Plugin%20Portal)](https://plugins.gradle.org/plugin/io.github.yubyf.maven-offline)
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.yubyf.mavenoffline/maven-offline?color=informational&label=Maven%20Central)](https://search.maven.org/artifact/io.github.yubyf.mavenoffline/maven-offline)
 ![Gradle](https://img.shields.io/badge/Gradle_Version-5--7-red.svg?style=flat)
 [![License](https://img.shields.io/github/license/Yubyf/maven-offline-gradle-plugin)](https://github.com/Yubyf/maven-offline-gradle-plugin/blob/master/LICENSE)
@@ -10,7 +11,7 @@ Gradle plugin for fetching specific maven repositories to local.
 ![MavenOffline](doc/maven-offline-sample.png)
 
 Supported dependency types:
-> [test|androidTest|debug|testDebug|androidTestDebug|testRelease|androidTestRelease]
+> [test|androidTest]
 > \+
 > [implementation|api|compileOnly|runtimeOnly|annotationProcessor]
 
