@@ -218,7 +218,7 @@ abstract class MavenOfflineTask : DefaultTask() {
                 File.separatorChar.toString()
             ) + File.separatorChar + artifactId + File.separatorChar
             Dependency(name, artifact.name, path, version, snapshotVersion, artifact.extension)
-        }
+        }.distinct()
     }.onFailure {
         logger.indentError("Failed to extract dependencies for project :$projectName\n\t${it.message}")
     }.getOrNull()
