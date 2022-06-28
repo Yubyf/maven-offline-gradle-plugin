@@ -18,7 +18,7 @@ Supported dependency types:
 
 **Maven Offline Gradle Plugin** is available on
 both [Gradle Plugin Portal](https://plugins.gradle.org/plugin/io.github.yubyf.maven-offline)(Pending Approval)
-and [MavenCentral](https://search.maven.org/artifact/io.github.yubyf.mavenoffline/maven-offline-gradle-plugin)
+and [MavenCentral](https://search.maven.org/artifact/io.github.yubyf.mavenoffline/maven-offline)
 
 1\. Add the `mavenCentral()` or `gradlePluginPortal()` to your top-level
 
