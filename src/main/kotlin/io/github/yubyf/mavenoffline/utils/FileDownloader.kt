@@ -21,7 +21,8 @@ internal suspend fun String.downloadFile(
     }.build()
     httpClient.newCall(request).execute().use { response ->
         if (response.code != 200) {
-            if (response.code == 404) {
+            // Requesting release files from the sonatype snapshot repository will return 400.
+            if (response.code == 404 || response.code == 400) {
                 throw RemoteFileNotFoundException("Remote file not found: ${this@downloadFile}")
             }
             throw RemoteFileDownloadException("Response failed with code ${response.code}: ${this@downloadFile}")
