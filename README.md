@@ -18,7 +18,7 @@ Supported dependency types:
 ## Installation
 
 **Maven Offline Gradle Plugin** is available on
-both [Gradle Plugin Portal](https://plugins.gradle.org/plugin/io.github.yubyf.maven-offline)(Pending Approval)
+both [Gradle Plugin Portal](https://plugins.gradle.org/plugin/io.github.yubyf.maven-offline)
 and [MavenCentral](https://search.maven.org/artifact/io.github.yubyf.mavenoffline/maven-offline)
 
 1\. Add the `mavenCentral()` or `gradlePluginPortal()` to your top-level
@@ -199,7 +199,8 @@ maven-offline
 
 - [x] Add support for fetching `annotationProcessor` dependencies.
 - [ ] Add support for URL wildcard pattern for Maven URL declarations.
-- [ ] Added support for file verification before fetching.
+- [ ] Add support for file verification before fetching.
+- [ ] Add new task to re-download failed dependencies.
 
 ## License
 
