@@ -2,12 +2,12 @@ package io.github.yubyf.mavenoffline.fixtures
 
 import java.io.File
 
-private const val FIXTURE_ROOT_PROJECT_NAME = "maven-offline-fixture"
+internal const val FIXTURE_ROOT_PROJECT_NAME = "maven-offline-fixture"
 
 class AndroidProjectTemplate(
     val script: Int = SCRIPT_TYPE_KTS,
     subProjectCount: Int = 1,
-    private val applyPluginTo: Int = -1,
+    private val applyPluginTo: Int = APPLY_PLUGIN_TO_ROOT,
     private val rootExtension: String? = null,
     private val snapshot: Boolean = false,
     vararg subExtensions: String?,
@@ -76,6 +76,7 @@ class AndroidProjectTemplate(
                 |        google()
                 |        mavenCentral()
                 |        ${if (snapshot) "maven { url = uri(\"https://oss.sonatype.org/content/repositories/snapshots\") }" else ""}
+                |        ${if (snapshot) "maven { url = uri(\"https://s01.oss.sonatype.org/content/repositories/snapshots\") }" else ""}
                 |    }
                 |}
                 |rootProject.name = "$FIXTURE_ROOT_PROJECT_NAME"
@@ -97,6 +98,7 @@ class AndroidProjectTemplate(
                 |        google()
                 |        mavenCentral()
                 |        ${if (snapshot) "maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }" else ""}
+                |        ${if (snapshot) "maven { url 'https://s01.oss.sonatype.org/content/repositories/snapshots' }" else ""}
                 |    }
                 |}
                 |rootProject.name = "$FIXTURE_ROOT_PROJECT_NAME"
@@ -120,7 +122,7 @@ class AndroidProjectTemplate(
                 |    id("com.android.application").version("7.2.1").apply(false)
                 |    id("com.android.library").version("7.2.1").apply(false)
                 |    id("org.jetbrains.kotlin.android").version("1.7.0").apply(false)
-                |    ${if (applyPluginTo == -1) "id(\"io.github.yubyf.maven-offline\").version(\"1.0.0\")" else ""}
+                |    ${if (applyPluginTo == APPLY_PLUGIN_TO_ROOT) "id(\"io.github.yubyf.maven-offline\")" else ""}
                 |}
                 |${extension ?: ""}
                 """.trimMargin()
@@ -130,25 +132,25 @@ class AndroidProjectTemplate(
                 |plugins {
                 |    id 'com.android.application' version '7.2.1' apply false
                 |    id 'com.android.library' version '7.2.1' apply false
-                |    ${if (applyPluginTo == -1) "id 'io.github.yubyf.maven-offline' version '1.0.0'" else ""}
+                |    ${if (applyPluginTo == APPLY_PLUGIN_TO_ROOT) "id 'io.github.yubyf.maven-offline'" else ""}
                 |}
                 |${extension ?: ""}
                 """.trimMargin()
             }
             SCRIPT_TYPE_LEGACY_GROOVY -> {
                 """
-                |${if (applyPluginTo == -1) "apply plugin: \"io.github.yubyf.maven-offline\"" else ""}
-                |
                 |buildscript {
                 |    repositories {
                 |        google()
                 |        mavenCentral()
-                |        mavenLocal()
                 |    }
                 |    dependencies {
                 |        classpath 'com.android.tools.build:gradle:4.2.2'
-                |        classpath 'io.github.yubyf.mavenoffline:maven-offline-gradle-plugin:1.0.0'
                 |    }
+                |}
+                |
+                |plugins {
+                |    ${if (applyPluginTo == -1) "id(\"io.github.yubyf.maven-offline\")" else ""}
                 |}
                 |
                 |allprojects {
@@ -156,6 +158,7 @@ class AndroidProjectTemplate(
                 |        google()
                 |        mavenCentral()
                 |        ${if (snapshot) "maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }" else ""}
+                |        ${if (snapshot) "maven { url 'https://s01.oss.sonatype.org/content/repositories/snapshots' }" else ""}
                 |    }
                 |}
                 |${extension ?: ""}
@@ -200,7 +203,7 @@ class AndroidProjectTemplate(
                 |plugins {
                 |    id("com.android.${if (app) "application" else "library"}")
                 |    id("org.jetbrains.kotlin.android")
-                |    ${if (applyPlugin) "id(\"io.github.yubyf.maven-offline\").version(\"1.0.0\")" else ""}
+                |    ${if (applyPlugin) "id(\"io.github.yubyf.maven-offline\")" else ""}
                 |}
                 |
                 |android {
@@ -225,7 +228,7 @@ class AndroidProjectTemplate(
                 """
                 |plugins {
                 |    id 'com.android.${if (app) "application" else "library"}'
-                |    ${if (applyPlugin) "id 'io.github.yubyf.maven-offline' version '1.0.0'" else ""}
+                |    ${if (applyPlugin) "id 'io.github.yubyf.maven-offline'" else ""}
                 |}
                 |
                 |android {
@@ -249,8 +252,10 @@ class AndroidProjectTemplate(
         private val legacyGroovyBuildFileContent: String
             get() =
                 """
-                |apply plugin: 'com.android.${if (app) "application" else "library"}'
-                |${if (applyPlugin) "apply plugin: \"io.github.yubyf.maven-offline\"" else ""}
+                |plugins {
+                |    id 'com.android.${if (app) "application" else "library"}'
+                |    ${if (applyPlugin) "id 'io.github.yubyf.maven-offline'" else ""}
+                |}
                 |
                 |android {
                 |    compileSdkVersion 32
@@ -291,6 +296,18 @@ internal const val SCRIPT_TYPE_LEGACY_GROOVY = 2
 const val EXTENSION_MAVEN_CENTRAL = """
 mavenOffline {
     maven(mavenCentral())
+}
+"""
+
+const val EXTENSION_MAVEN_CENTRAL_SNAPSHOT_REGEX = """
+mavenOffline {
+    maven("https://.+?.sonatype.org/content/repositories/snapshots")
+}
+"""
+
+const val EXTENSION_MAVEN_CENTRAL_SNAPSHOT_EXCLUDE_S01_REGEX = """
+mavenOffline {
+    maven("https://((?!s01).).+?.sonatype.org/content/repositories/snapshots")
 }
 """
 

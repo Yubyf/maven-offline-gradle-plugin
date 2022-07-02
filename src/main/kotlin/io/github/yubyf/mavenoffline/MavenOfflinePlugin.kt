@@ -16,6 +16,7 @@ import org.gradle.api.internal.GradleInternal
 import org.gradle.api.logging.Logger
 import org.gradle.util.GradleVersion
 import java.io.File
+import java.util.regex.Pattern
 
 @Suppress("unused")
 abstract class MavenOfflinePlugin : Plugin<Project> {
@@ -71,7 +72,7 @@ abstract class MavenOfflinePlugin : Plugin<Project> {
 
     private fun Project.isRoot() = rootProject === this
 
-    private fun Project.resolveArtifacts(includeClasspath: Boolean): Array<ResolvedArtifact> =
+    private fun Project.resolveArtifacts(includeClasspath: Boolean): List<ResolvedArtifact> =
         (if (isRoot()) buildscript.configurations else configurations).filterDependencyHandlers(includeClasspath)
             .flatMap { configuration ->
                 configuration.runCatching {
@@ -89,13 +90,14 @@ abstract class MavenOfflinePlugin : Plugin<Project> {
                 }.onFailure {
                     logger.indentError("Resolve artifacts error - ${it.message}")
                 }.getOrElse { emptyList() }
-            }.toTypedArray()
+            }
 
     private fun Project.createMavenOfflineExtension() =
         extensions.create("mavenOffline", MavenOfflineExtension::class.java)
 
     private fun Project.registerTask(extension: MavenOfflineExtension) =
         tasks.register(PREF_TASK_NAME, MavenOfflineTask::class.java) { task ->
+            logger.lifecycle("-----------")
             val artifacts = resolveArtifacts(extension.includeClasspath)
             var mavens = extension.mavens.toTypedArray()
             var targetDir =
@@ -139,10 +141,35 @@ abstract class MavenOfflinePlugin : Plugin<Project> {
                 } ?: logger.lifecycle("root project maven offline extension not found")
             }
 
+            logger.lifecycle("Extracting effective repositories for project :$projectName...")
+            val offlineRepos: List<Repository> = mavens.runCatching {
+                flatMap {
+                    repos.filter { repo ->
+                        repo.url == it || runCatching {
+                            Pattern.compile(it.toString()).matcher(repo.url.toString()).matches()
+                        }.getOrDefault(false)
+                    }.map { repo ->
+                        val credentials = repo.credentials
+                        Repository(
+                            repo.name,
+                            repo.url.toString().takeIf { it.endsWith("/") } ?: "${repo.url}/",
+                            credentials)
+                    }
+                }
+            }.onFailure {
+                logger.indentError("Failed to extract effective repositories for project :$projectName\n\t${it.message}")
+            }.getOrDefault(emptyList())
+
+            logger.lifecycle(
+                "Effective repositories of project :$projectName - ${
+                    if (offlineRepos.isEmpty()) "none"
+                    else offlineRepos.joinToString(", ") { it.url }
+                }"
+            )
+
             task.group = PREF_TASK_GROUP
             task.artifacts.set(artifacts)
-            task.repositories.set(repos.toTypedArray())
-            task.offlineMavens.set(mavens)
+            task.offlineRepos.set(offlineRepos)
             task.targetDir.set(targetDir)
             task.cacheDir.set(File(buildDir, "intermediates/mavenoffline/cache/"))
             task.logDir.set(logDir)

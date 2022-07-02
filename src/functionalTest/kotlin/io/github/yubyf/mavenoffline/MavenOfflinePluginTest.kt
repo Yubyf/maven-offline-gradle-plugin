@@ -87,6 +87,41 @@ abstract class MavenOfflinePluginTest {
     }
 
     @Test
+    fun `only extract mavens matched by standard regex`() {
+        val project = AndroidProjectTemplate(
+            script = script,
+            rootExtension = EXTENSION_MAVEN_CENTRAL_SNAPSHOT_REGEX,
+            snapshot = true,
+        )
+        FixtureRunner(testProjectDir, project, root)
+            .run("tasks", "--group=$PREF_TASK_GROUP") {
+                println(output)
+                assertThat(output).containsMatch(
+                    "Effective repositories of project :$FIXTURE_ROOT_PROJECT_NAME - " +
+                            "https://oss.sonatype.org/content/repositories/snapshots/, " +
+                            "https://s01.oss.sonatype.org/content/repositories/snapshots/"
+                )
+            }
+    }
+
+    @Test
+    fun `only extract mavens matched by regex with zero-length assertion`() {
+        val project = AndroidProjectTemplate(
+            script = script,
+            rootExtension = EXTENSION_MAVEN_CENTRAL_SNAPSHOT_EXCLUDE_S01_REGEX,
+            snapshot = true,
+        )
+        FixtureRunner(testProjectDir, project, root)
+            .run("tasks", "--group=$PREF_TASK_GROUP") {
+                println(output)
+                assertThat(output).containsMatch(
+                    "Effective repositories of project :$FIXTURE_ROOT_PROJECT_NAME - " +
+                            "https://oss.sonatype.org/content/repositories/snapshots/"
+                )
+            }
+    }
+
+    @Test
     fun `fetch dependencies of mavenCentral for root project`() {
         val project = AndroidProjectTemplate(
             script = script,
@@ -156,7 +191,7 @@ abstract class MavenOfflinePluginTest {
                         when (script) {
                             SCRIPT_TYPE_KTS -> "120"
                             SCRIPT_TYPE_GROOVY -> "96"
-                            SCRIPT_TYPE_LEGACY_GROOVY -> "67"
+                            SCRIPT_TYPE_LEGACY_GROOVY -> "64"
                             else -> throw IllegalArgumentException("Unknown script type: $script")
                         }
                     }"

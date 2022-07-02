@@ -10,14 +10,16 @@ import io.github.yubyf.mavenoffline.utils.indentError
 import kotlinx.coroutines.*
 import org.gradle.api.DefaultTask
 import org.gradle.api.artifacts.ResolvedArtifact
-import org.gradle.api.artifacts.repositories.MavenArtifactRepository
 import org.gradle.api.artifacts.repositories.PasswordCredentials
+import org.gradle.api.internal.GradleInternal
+import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.TaskAction
+import org.gradle.internal.logging.progress.ProgressLogger
+import org.gradle.internal.logging.progress.ProgressLoggerFactory
 import java.io.File
 import java.io.IOException
-import java.net.URI
 import java.util.*
 
 abstract class MavenOfflineTask : DefaultTask() {
@@ -34,13 +36,10 @@ abstract class MavenOfflineTask : DefaultTask() {
     abstract val cacheDir: Property<File>
 
     @get:Input
-    abstract val artifacts: Property<Array<ResolvedArtifact>>
+    abstract val artifacts: ListProperty<ResolvedArtifact>
 
     @get:Input
-    abstract val repositories: Property<Array<MavenArtifactRepository>>
-
-    @get:Input
-    abstract val offlineMavens: Property<Array<URI>>
+    abstract val offlineRepos: ListProperty<Repository>
 
     @TaskAction
     fun taskAction() {
@@ -56,21 +55,11 @@ abstract class MavenOfflineTask : DefaultTask() {
             targetDir.get().mkdirs()
         }
         logger.lifecycle("Download directory of project :$projectName: ${targetDir.get().absolutePath}/")
-        logger.lifecycle("Extracting effective repositories for project :$projectName...")
-        val effectiveRepos = extractEffectiveRepositories().also {
-            if (it.isEmpty()) {
-                logger.lifecycle("No effective repositories found in project :$projectName, skip offline downloading")
-                printCompletedLog()
-                return
-            }
+        if (offlineRepos.get().isEmpty()) {
+            logger.lifecycle("No effective repositories found in project :$projectName, skip offline downloading")
+            printCompletedLog()
+            return
         }
-        logger.lifecycle(
-            "Effective repositories of project :$projectName - ${
-                effectiveRepos.fold("") { acc, repo ->
-                    "$acc, ${repo.name}"
-                }.drop(2)
-            }"
-        )
         logger.lifecycle("Start fetching mavens for project :$projectName...")
         val notFoundDependencies = mutableSetOf<String>()
         val downloadedDependencies = mutableSetOf<String>()
@@ -103,8 +92,8 @@ abstract class MavenOfflineTask : DefaultTask() {
                     }
                 }
                 val dir = File(targetDir.get(), path)
-                effectiveRepos.runCatching {
-                    find { repo ->
+                offlineRepos.runCatching {
+                    get().find { repo ->
                         val url = repo.url
                         val credentials = repo.credentials
                         val metaUrl = "$url$metaPath"
@@ -223,19 +212,6 @@ abstract class MavenOfflineTask : DefaultTask() {
         logger.indentError("Failed to extract dependencies for project :$projectName\n\t${it.message}")
     }.getOrNull()
 
-    private fun extractEffectiveRepositories(): List<Repository> = offlineMavens.runCatching {
-        get().mapNotNull {
-            repositories.get().find { repo ->
-                repo.url == it
-            }?.let { repo ->
-                val credentials = repo.credentials
-                Repository(repo.name, repo.url.toString().takeIf { it.endsWith("/") } ?: "${repo.url}/", credentials)
-            }
-        }
-    }.onFailure {
-        logger.indentError("Failed to extract effective repositories for project :$projectName\n\t${it.message}")
-    }.getOrDefault(emptyList())
-
     private fun printCompletedLog(downloadedCount: Int = 0, failedCount: Int = 0, notFoundCount: Int = 0) =
         logger.lifecycle(
             "Finished fetching mavens for project :$projectName\n" +
@@ -276,13 +252,13 @@ abstract class MavenOfflineTask : DefaultTask() {
         val snapshotVersion: String? = null,
         val extension: String,
     )
-
-    private data class Repository(
-        val name: String = "",
-        val url: String,
-        val credentials: PasswordCredentials,
-    )
 }
+
+data class Repository(
+    val name: String = "",
+    val url: String,
+    val credentials: PasswordCredentials,
+)
 
 @OptIn(ExperimentalCoroutinesApi::class)
 private val ioScope = CoroutineScope(Dispatchers.IO.limitedParallelism(10) + SupervisorJob())
