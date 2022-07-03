@@ -1,23 +1,15 @@
 package io.github.yubyf.mavenoffline
 
-import io.github.yubyf.mavenoffline.consts.PREF_LIB_CHECKSUM_SUFFIXES
-import io.github.yubyf.mavenoffline.consts.PREF_LIB_EXTRA_SUFFIXES
-import io.github.yubyf.mavenoffline.consts.PREF_METADATA_NAME
-import io.github.yubyf.mavenoffline.consts.PREF_POM_EXTENSION
-import io.github.yubyf.mavenoffline.utils.RemoteFileNotFoundException
-import io.github.yubyf.mavenoffline.utils.downloadFile
-import io.github.yubyf.mavenoffline.utils.indentError
+import io.github.yubyf.mavenoffline.consts.*
+import io.github.yubyf.mavenoffline.utils.*
 import kotlinx.coroutines.*
 import org.gradle.api.DefaultTask
 import org.gradle.api.artifacts.ResolvedArtifact
 import org.gradle.api.artifacts.repositories.PasswordCredentials
-import org.gradle.api.internal.GradleInternal
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.TaskAction
-import org.gradle.internal.logging.progress.ProgressLogger
-import org.gradle.internal.logging.progress.ProgressLoggerFactory
 import java.io.File
 import java.io.IOException
 import java.util.*
@@ -65,6 +57,33 @@ abstract class MavenOfflineTask : DefaultTask() {
         val downloadedDependencies = mutableSetOf<String>()
         val failedDependencies = mutableSetOf<String>()
         val depDeferreds = mutableSetOf<Deferred<*>>()
+
+        suspend fun File.verifyLocalFile(baseUrl: String, credentials: PasswordCredentials): Boolean {
+            if (exists()) {
+                PREF_LIB_CHECKSUM_SUFFIXES.mapNotNull { suffix ->
+                    PREF_LIB_CHECKSUM_ALGORITHM_MAP[suffix]?.let { it to baseUrl + suffix }
+                }.fold(Pair("", "")) { acc, (algorithm, url) ->
+                    if (acc.first.isNotEmpty() && acc.second.isNotEmpty()) return@fold acc
+                    val checksum =
+                        url.runCatching { downloadString(credentials.username, credentials.password) }
+                            .getOrNull()
+                    if (checksum != null) {
+                        algorithm to checksum
+                    } else {
+                        acc
+                    }
+                }.takeIf {
+                    it.first.isNotEmpty() && it.second.isNotEmpty()
+                }?.let {
+                    if (checkSum(it.first) == it.second) {
+                        logger.lifecycle("File ${this.path} is up-to-date")
+                        return true
+                    }
+                }
+            }
+            return false
+        }
+
         dependencies.forEach { (name, id, path, version, snapshotVersion, extension) ->
             depDeferreds.add(ioScope.async {
                 val snapshot = snapshotVersion != null
@@ -78,18 +97,8 @@ abstract class MavenOfflineTask : DefaultTask() {
                 val libMainFileNames = setOf(PREF_POM_EXTENSION, ".$extension").map { suffix ->
                     "$basename$suffix"
                 }
-                val libMainFileChecksumNames = libMainFileNames.flatMap {
-                    PREF_LIB_CHECKSUM_SUFFIXES.map { suffix ->
-                        "$it$suffix"
-                    }
-                }
                 val libExtraFileNames = PREF_LIB_EXTRA_SUFFIXES.map { suffix ->
                     "$basename$suffix"
-                }
-                val libExtraFileChecksumNames = libExtraFileNames.flatMap {
-                    PREF_LIB_CHECKSUM_SUFFIXES.map { suffix ->
-                        "$it$suffix"
-                    }
                 }
                 val dir = File(targetDir.get(), path)
                 offlineRepos.runCatching {
@@ -114,18 +123,25 @@ abstract class MavenOfflineTask : DefaultTask() {
                             }.getOrDefault(false)
 
                         // Download maven-metadata.xml
-                        File(dir, PREF_METADATA_NAME).downloadToCacheFrom(metaUrl) { e ->
-                            e.takeIf { it !is RemoteFileNotFoundException }?.let { throw e }
-                        }.takeIf { it } ?: return@find false
+                        File(dir, PREF_METADATA_NAME).apply {
+                            if (verifyLocalFile(metaUrl, credentials)) {
+                                return@apply
+                            }
+                            downloadToCacheFrom(metaUrl) { e ->
+                                e.takeIf { it !is RemoteFileNotFoundException }?.let { throw e }
+                            }.takeIf { it } ?: return@find false
+                        }
 
                         val versionDir = File(dir, version)
 
                         // Download snapshot maven-metadata.xml
                         if (snapshot) {
                             val snapshotMetaUrl = "$url$path$version/$PREF_METADATA_NAME"
-                            File(versionDir, PREF_METADATA_NAME).downloadToCacheFrom(snapshotMetaUrl) { e ->
-                                e.takeIf { it !is RemoteFileNotFoundException }?.let { throw e }
-                            }.takeIf { it } ?: return@find false
+                            File(versionDir, PREF_METADATA_NAME).apply {
+                                downloadToCacheFrom(snapshotMetaUrl) { e ->
+                                    e.takeIf { it !is RemoteFileNotFoundException }?.let { throw e }
+                                }.takeIf { it } ?: return@find false
+                            }
                         }
 
                         // Download lib main files
@@ -133,8 +149,14 @@ abstract class MavenOfflineTask : DefaultTask() {
                         libMainFileNames.forEach { filename ->
                             val fileUrl = "$url$path$version/$filename"
                             libDeferreds.add(ioScope.async {
-                                File(versionDir, filename).downloadToCacheFrom(fileUrl) { e ->
-                                    e.takeIf { it !is RemoteFileNotFoundException }?.let { throw e }
+                                File(versionDir, filename).run {
+                                    if (verifyLocalFile(fileUrl, credentials)) {
+                                        true
+                                    } else {
+                                        downloadToCacheFrom(fileUrl) { e ->
+                                            e.takeIf { it !is RemoteFileNotFoundException }?.let { throw e }
+                                        }
+                                    }
                                 }
                             })
                         }
@@ -155,16 +177,20 @@ abstract class MavenOfflineTask : DefaultTask() {
                         // Download lib extra and checksum files
                         val extraDeferreds = mutableSetOf<Deferred<Boolean>>()
                         val versionDir = File(dir, version)
-                        (libExtraFileNames + libMainFileChecksumNames + libExtraFileChecksumNames).forEach extras@{ filename ->
+                        libExtraFileNames.forEach extras@{ filename ->
                             val fileUrl = "$url$path$version/$filename"
                             extraDeferreds.add(ioScope.async {
                                 File(versionDir, filename).let { file ->
-                                    fileUrl.runCatching {
-                                        downloadFile(file, credentials.username, credentials.password)
+                                    if (file.verifyLocalFile(fileUrl, credentials)) {
                                         true
-                                    }.onFailure {
-                                        file.takeIf { it.exists() }?.delete()
-                                    }.getOrDefault(false)
+                                    } else {
+                                        fileUrl.runCatching {
+                                            downloadFile(file, credentials.username, credentials.password)
+                                            true
+                                        }.onFailure {
+                                            file.takeIf { it.exists() }?.delete()
+                                        }.getOrDefault(false)
+                                    }
                                 }
                             })
                         }

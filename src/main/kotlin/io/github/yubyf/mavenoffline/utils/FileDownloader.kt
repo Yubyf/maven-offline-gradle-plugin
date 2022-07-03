@@ -1,20 +1,41 @@
 package io.github.yubyf.mavenoffline.utils
 
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import okhttp3.*
 import java.io.*
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 @Throws(RemoteFileNotFoundException::class, RemoteFileDownloadException::class, IOException::class)
+internal suspend fun String.downloadString(
+    username: String? = null,
+    password: String? = null,
+): String? = downloadData(username, password) { body, length ->
+    ByteArrayOutputStream(length.toInt()).use {
+        val result = it.write(body, length)
+        if (result > 0) it.toString() else null
+    }
+}
+
+@Throws(RemoteFileNotFoundException::class, RemoteFileDownloadException::class, IOException::class)
 internal suspend fun String.downloadFile(
     target: File,
     username: String? = null,
     password: String? = null,
-): Boolean = runInterruptible(Dispatchers.IO) {
-    val request = Request.Builder().get().url(this@downloadFile).apply {
+) = downloadData(username, password) { body, length ->
+    target.parentFile.takeIf { !it.exists() }?.mkdirs()
+    target.outputStream().use { it.write(body, length) } > 0
+}
+
+@Throws(RemoteFileNotFoundException::class, RemoteFileDownloadException::class, IOException::class)
+private suspend fun <T> String.downloadData(
+    username: String? = null,
+    password: String? = null,
+    block: suspend (InputStream, Long) -> T,
+): T = withContext(Dispatchers.IO) {
+    val request = Request.Builder().get().url(this@downloadData).apply {
         if (!username.isNullOrBlank() && !password.isNullOrBlank()) {
             addHeader("Authorization", Credentials.basic(username, password))
         }
@@ -23,20 +44,19 @@ internal suspend fun String.downloadFile(
         if (response.code != 200) {
             // Requesting release files from the sonatype snapshot repository will return 400.
             if (response.code == 404 || response.code == 400) {
-                throw RemoteFileNotFoundException("Remote file not found: ${this@downloadFile}")
+                throw RemoteFileNotFoundException("Remote file not found: ${this@downloadData}")
             }
-            throw RemoteFileDownloadException("Response failed with code ${response.code}: ${this@downloadFile}")
+            throw RemoteFileDownloadException("Response failed with code ${response.code}: ${this@downloadData}")
         }
-        target.parentFile.takeIf { !it.exists() }?.mkdirs()
         response.body?.use { body ->
             val length: Long = response.header("CONTENT_LENGTH")?.toLong() ?: 1
-            target.outputStream().use { it.write(body.byteStream(), length) } > 0
-        } ?: throw RemoteFileDownloadException("Response doesn't contain a file: ${this@downloadFile}")
+            block(body.byteStream(), length)
+        } ?: throw RemoteFileDownloadException("Response doesn't contain a file: ${this@downloadData}")
     }
 }
 
 @Throws(IOException::class)
-private fun FileOutputStream.write(inputStream: InputStream, length: Long): Long {
+private fun OutputStream.write(inputStream: InputStream, length: Long): Long {
     if (length <= 0L) {
         throw IllegalArgumentException("Length must be greater than or equal to 0")
     }
