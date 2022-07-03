@@ -197,10 +197,18 @@ maven-offline
 
 ## TODO
 
-- [x] Add support for fetching `annotationProcessor` dependencies.
-- [ ] Add support for URL wildcard pattern for Maven URL declarations.
-- [ ] Add support for file verification before fetching.
+### Todo
+
 - [ ] Add new task to re-download failed dependencies.
+
+### In Progress
+
+- [ ] Add support for URL ~~wildcard pattern~~ regex for Maven URL declarations.
+- [ ] Add support for file verification before fetching.
+
+### Done
+
+- [x] Add support for fetching `annotationProcessor` dependencies.
 
 ## License
 
