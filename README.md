@@ -199,16 +199,15 @@ maven-offline
 
 ### Todo
 
-- [ ] Add new task to re-download failed dependencies.
-
 ### In Progress
 
-- [ ] Add support for URL ~~wildcard pattern~~ regex for Maven URL declarations.
-- [ ] Add support for file verification before fetching.
+- [ ] Add new task to re-download failed dependencies.
 
 ### Done
 
 - [x] Add support for fetching `annotationProcessor` dependencies.
+- [x] Add support for URL ~~wildcard pattern~~ regex for Maven URL declarations.
+- [x] Add support for file verification before fetching.
 
 ## License
 
