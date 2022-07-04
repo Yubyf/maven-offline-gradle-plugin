@@ -13,6 +13,7 @@ import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import java.io.File
 
+@Suppress("FunctionName")
 abstract class MavenOfflinePluginTest {
 
     protected abstract val script: Int
@@ -141,6 +142,8 @@ abstract class MavenOfflinePluginTest {
                         PREF_TARGET_DIR).listFiles()
                         .isNullOrEmpty()
                 ).isFalse()
+                // If a local file exists, it will not be downloaded again.
+                assertThat(output).containsMatch("File .+? is up-to-date")
             }
     }
 
