@@ -110,6 +110,10 @@ mavenOffline {
         jcenter(),
         // Add your custom repository URLs here
         "https://jitpack.io"
+        // Support regex patterns since v1.0.3
+        "https://.+?.sonatype.org/content/repositories/snapshots"
+        // Also support zero-length assertion regex
+        "https://((?!s01).).+?.sonatype.org/content/repositories/snapshots"
     )
 
     // Target path to store the fetched repositories
