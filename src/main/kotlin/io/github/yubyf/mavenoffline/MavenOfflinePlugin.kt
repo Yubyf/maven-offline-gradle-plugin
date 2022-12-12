@@ -73,9 +73,13 @@ abstract class MavenOfflinePlugin : Plugin<Project> {
     private fun Project.isRoot() = rootProject === this
 
     private fun Project.resolveArtifacts(includeClasspath: Boolean): List<ResolvedArtifact> =
-        (if (isRoot()) buildscript.configurations else configurations).filterDependencyHandlers(includeClasspath)
+        configurations.filterDependencyHandlers(includeClasspath)
+            .plus(if (isRoot()) buildscript.configurations.filterDependencyHandlers(includeClasspath) else emptyList())
             .flatMap { configuration ->
                 configuration.runCatching {
+                    if (!isCanBeResolved) {
+                        configuration.isCanBeResolved = true
+                    }
                     resolvedConfiguration.let {
                         if (!it.hasError()) {
                             it.resolvedArtifacts.asIterable()
