@@ -165,12 +165,12 @@ publishing {
 
 signing {
     // Load gpg info in gradle.properties(global)
-    useGpgCmd()
-    afterEvaluate {
-        sign(publishing.publications["release"])
-        sign(publishing.publications["pluginMaven"])
-        sign(publishing.publications["mavenOfflinePluginMarkerMaven"])
-    }
+//    useGpgCmd()
+//    afterEvaluate {
+//        sign(publishing.publications["release"])
+//        sign(publishing.publications["pluginMaven"])
+//        sign(publishing.publications["mavenOfflinePluginMarkerMaven"])
+//    }
 }
 //endregion
 

@@ -11,10 +11,14 @@ import java.net.URI
 
 open class MavenOfflineExtension {
     internal val mavens = mutableSetOf<URI>()
+    internal val artifactFilters = mutableSetOf<Regex>()
     var targetPath: String? = null
     var includeClasspath = false
 
     fun maven(vararg uri: String) = uri.forEach { mavens.add(URI(it)) }
+
+    fun artifactFilter(vararg pattern: String) =
+        pattern.map { Regex(it) }.forEach { artifactFilters.add(it) }
 
     fun google() = ArtifactRepositoryContainer.GOOGLE_URL
 

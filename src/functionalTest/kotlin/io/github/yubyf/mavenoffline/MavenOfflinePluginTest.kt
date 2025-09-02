@@ -128,15 +128,16 @@ abstract class MavenOfflinePluginTest {
             script = script,
             subProjectCount = 2,
             applyPluginTo = AndroidProjectTemplate.APPLY_PLUGIN_TO_ROOT,
-            rootExtension = EXTENSION_MAVEN_CENTRAL
+            rootExtension = EXTENSION_MAVEN_CENTRAL_WITH_FILTER
         )
         FixtureRunner(testProjectDir, project, root)
             .run(PREF_TASK_NAME) {
                 assertThat(task(":$PREF_TASK_NAME")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
+                println(output)
                 project.subProjects.map { it.name }.forEachIndexed { _, name ->
                     assertThat(task(":$name:$PREF_TASK_NAME")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
                 }
-                assertThat(output).contains("Downloaded dependencies: ${if (script == SCRIPT_TYPE_KTS) "14" else "9"}")
+                assertThat(output).contains("Downloaded dependencies: ${if (script == SCRIPT_TYPE_KTS) "11" else "6"}")
                 assertThat(
                     File(root?.let { File(testProjectDir.root, it) } ?: testProjectDir.root,
                         PREF_TARGET_DIR).listFiles()
@@ -161,6 +162,7 @@ abstract class MavenOfflinePluginTest {
                 project.subProjects.map { it.name }.forEachIndexed { _, name ->
                     assertThat(task(":$name:$PREF_TASK_NAME")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
                 }
+                println(output)
                 assertThat(output).contains("Downloaded dependencies: ${if (script == SCRIPT_TYPE_KTS) "14" else "9"}")
                 assertThat(
                     File(root?.let { File(testProjectDir.root, it) } ?: testProjectDir.root,
@@ -189,6 +191,7 @@ abstract class MavenOfflinePluginTest {
                 project.subProjects.map { it.name }.forEachIndexed { _, name ->
                     assertThat(task(":$name:$PREF_TASK_NAME")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
                 }
+                println(output)
                 assertThat(output).contains(
                     "Downloaded dependencies: ${
                         when (script) {
@@ -227,6 +230,7 @@ abstract class MavenOfflinePluginTest {
                 project.subProjects.map { it.name }.forEachIndexed { _, name ->
                     assertThat(task(":$name:$PREF_TASK_NAME")?.outcome).isEqualTo(TaskOutcome.SUCCESS)
                 }
+                println(output)
                 assertThat(output).contains("Downloaded dependencies: ${if (script == SCRIPT_TYPE_KTS) "16" else "11"}")
                 assertThat(
                     File(root?.let { File(testProjectDir.root, it) } ?: testProjectDir.root,

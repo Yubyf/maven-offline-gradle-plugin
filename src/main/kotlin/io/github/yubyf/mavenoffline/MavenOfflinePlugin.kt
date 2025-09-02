@@ -104,6 +104,7 @@ abstract class MavenOfflinePlugin : Plugin<Project> {
             logger.lifecycle("-----------")
             val artifacts = resolveArtifacts(extension.includeClasspath)
             var mavens = extension.mavens.toTypedArray()
+            var artifactFilters = extension.artifactFilters.toTypedArray()
             var targetDir =
                 extension.targetPath?.let {
                     File(projectDir, it).validOrNull().also { file ->
@@ -131,6 +132,12 @@ abstract class MavenOfflinePlugin : Plugin<Project> {
                             "Configuration \"maven\" of $TAG in project :$projectName is overridden by mavens from root project - ${rootExtension.mavens}"
                         )
                         mavens = rootExtension.mavens.toTypedArray()
+                    }
+                    if (rootExtension.artifactFilters.isNotEmpty()) {
+                        logger.lifecycle(
+                            "Configuration \"artifactFilter\" of $TAG in project :$projectName is overridden by artifact filters from root project - ${rootExtension.artifactFilters}"
+                        )
+                        artifactFilters = rootExtension.artifactFilters.toTypedArray()
                     }
                     targetDir =
                         rootExtension.targetPath?.let {
@@ -172,7 +179,13 @@ abstract class MavenOfflinePlugin : Plugin<Project> {
             )
 
             task.group = PREF_TASK_GROUP
-            task.artifacts.set(artifacts)
+            task.artifacts.set(
+                artifacts.filter { artifact ->
+                    artifactFilters.any { regex ->
+                        regex.matches(artifact.id.componentIdentifier.displayName)
+                    }
+                }
+            )
             task.offlineRepos.set(offlineRepos)
             task.targetDir.set(targetDir)
             task.cacheDir.set(File(buildDir, "intermediates/mavenoffline/cache/"))

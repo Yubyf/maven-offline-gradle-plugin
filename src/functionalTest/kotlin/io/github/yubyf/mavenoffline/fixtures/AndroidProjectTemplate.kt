@@ -293,11 +293,12 @@ internal const val SCRIPT_TYPE_KTS = 0
 internal const val SCRIPT_TYPE_GROOVY = 1
 internal const val SCRIPT_TYPE_LEGACY_GROOVY = 2
 
-const val EXTENSION_MAVEN_CENTRAL = """
+val EXTENSION_MAVEN_CENTRAL_WITH_FILTER = """
 mavenOffline {
     maven(mavenCentral())
+    artifactFilter("((?!guava).)*")
 }
-"""
+""".trimIndent()
 
 const val EXTENSION_MAVEN_CENTRAL_SNAPSHOT_REGEX = """
 mavenOffline {
